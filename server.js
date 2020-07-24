@@ -104,12 +104,30 @@ io.of("/game").on("connection", function (socket) {
 
         //handle win and losses update
         socket.on("updateWin", (data)=>{
-            User.findOneAndUpdate({ username: data.username }, { wins:Number( data.wins) },{ useFindAndModify:true });
+            User.findOneAndUpdate({
+                username: data.username
+            }, {
+                wins: Number(data.wins)
+            }, {
+                new: true
+            }, (error, success) => {
+                if (error) {
+                    console.log("ERROR: ", error)
+                } else {
+                    console.log("SUCCESS", success)
+                }
+            });
             io.of("/game").emit("updateWin", data);
         });
         //update user's loss in db
         socket.on("updateLoss", (data)=>{
-            User.findOneAndUpdate({ username: data.username },{ losses: Number(data.losses) },{ useFindAndModify:true });
+            User.findOneAndUpdate({ username: data.username },{ losses: Number(data.losses) },{ new:true }, (error, success)=>{
+                if(error){
+                    console.log("ERROR: ", error)
+                }else{
+                    console.log("SUCCESS", success)
+                }
+            });
              io.of("/game").emit("updateLoss", data);
         });
 
