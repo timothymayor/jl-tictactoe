@@ -1,7 +1,11 @@
 const express = require("express"),
+            database = require("./config/database")(),
+            User = require("./models/user"),
             http = require("http"),
              socketIo = require("socket.io"),
-             fs = require("fs");
+             fs = require("fs"),
+             getUsername = require("./middleware/getUsername"),
+             ejs = require("ejs");
 
 
 const app = express();
@@ -13,12 +17,29 @@ const clients = {};
 app.use(express.static("public"));
 app.use(express.static("node_modules"));
 
-app.get("/", (req, res) => {
+app.get("/",(req, res) => {
     res.sendFile("home.html", { root: __dirname })
 });
-app.get("/game", (req, res) => {
-    const stream = fs.createReadStream(__dirname + "/index.html");
-    stream.pipe(res);
+
+app.get("/game", getUsername, async (req, res) => {
+    // const stream = fs.createReadStream(__dirname + "/index.html");
+    // stream.pipe(res);
+    const username = req.data.player;
+    const user = await User.findOne({ username });
+    if(!user){
+        const newUser = new User({
+            username: username
+        });
+        User.create(newUser).catch(err =>{
+            return res.redirect("back");
+        }).then(success =>{
+            return res.render("index.ejs", {
+                data: success
+            });
+        });
+    }else{
+        return res.render("index.ejs", { data: user });
+    }
 });
 
 app.get("/view", (req, res) => {
@@ -28,11 +49,11 @@ app.get("/view", (req, res) => {
 
 var players = {}; // opponent: scoket.id of the opponent, symbol = "X" | "O", socket: player's socket
 var unmatched;
-var viewers = []
+var viewers = [];
 
 
 // When a client connects
-io.on("connection", function (socket) {
+io.of("/game").on("connection", function (socket) {
     let id = socket.id;
 
     clients[socket.id] = socket;
@@ -44,6 +65,7 @@ io.on("connection", function (socket) {
 
     if(socket.handshake.headers.referer === "http://localhost:5000/view") {
         viewers.push(socket)
+        socket.emit("new user", "New user Joined!!")
     } else {
 
         join(socket); // Fill 'players' data structure
@@ -57,7 +79,7 @@ io.on("connection", function (socket) {
 
             opponentOf(socket).emit("game.begin", { // Send the game.begin event to the opponent
                 symbol: players[opponentOf(socket).id].symbol,
-                username: players[socket.id].username,
+                username2: players[opponentOf(socket).id].username,
                 // username: players[opponentOf(socket).id].username
             });
         }
@@ -75,8 +97,38 @@ io.on("connection", function (socket) {
             socket.emit("move.made", data); // Emit for the player who made the move
             opponentOf(socket).emit("move.made", data); // Emit for the opponent
             viewers.forEach(socket => {
-                socket.emit("move.made", data)
-            })
+                socket.emit("move.made", data);
+            });
+        });
+
+        //handle win and losses update
+        socket.on("updateWin", (data)=>{
+            User.findOneAndUpdate({ username: data.username }, { wins:Number( data.wins) },{ useFindAndModify:false });
+            io.of("/game").emit("updateWin", data);
+        });
+        //update user's loss in db
+        socket.on("updateLoss", (data)=>{
+            User.findOneAndUpdate({ username: data.username },{ losses: Number(data.losses) },{ useFindAndModify:false });
+             io.of("/game").emit("updateLoss", data);
+        });
+
+        //enable spctators to send reactions
+        var spectators = io.of("/view")
+
+        //event to send happy reaction
+        socket.on("happy", (data)=>{
+            io.of("/game").emit("happy", data);
+        });
+        socket.on("love", (data)=>{
+            io.of("/game").emit("love", data);
+        });
+        socket.on("eyes", (data)=>{
+            io.of("/game").emit("eyes", data);
+        });
+
+        //event to send message
+        socket.on("message", (msg)=>{
+            socket.emit("message", msg);
         });
 
         // Event to inform player that the opponent left
@@ -86,6 +138,24 @@ io.on("connection", function (socket) {
             }
         });
     }
+});
+
+io.of("/view").on("connection", (spectator)=>{
+    //event to send happy reaction
+    spectator.on("happy", (data) => {
+        io.of("/game").emit("happy", data);
+    });
+    spectator.on("love", (data) => {
+        io.of("/game").emit("love", data);
+    });
+    spectator.on("eyes", (data) => {
+        io.of("/game").emit("eyes", data);
+    });
+
+    //event to send message
+    spectator.on("message", (msg) => {
+        io.of("/game").emit("message", msg);
+    });
 });
 
 
