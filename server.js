@@ -50,6 +50,7 @@ app.get("/view", (req, res) => {
 var players = {}; // opponent: scoket.id of the opponent, symbol = "X" | "O", socket: player's socket
 var unmatched;
 var viewers = [];
+var leaderBoard = [];
 
 
 // When a client connects
@@ -57,7 +58,7 @@ io.of("/game").on("connection", function (socket) {
     let id = socket.id;
 
     clients[socket.id] = socket;
-
+    
     socket.on("disconnect", () => { // Bind event for that socket (player)
         delete clients[socket.id];
         socket.broadcast.emit("clientdisconnect", id);
@@ -103,13 +104,41 @@ io.of("/game").on("connection", function (socket) {
 
         //handle win and losses update
         socket.on("updateWin", (data)=>{
-            User.findOneAndUpdate({ username: data.username }, { wins:Number( data.wins) },{ useFindAndModify:false });
+            User.findOneAndUpdate({
+                username: data.username
+            }, {
+                wins: Number(data.wins)
+            }, {
+                new: true
+            }, (error, success) => {
+                if (error) {
+                    console.log("ERROR: ", error)
+                } else {
+                    console.log("SUCCESS", success)
+                }
+            });
             io.of("/game").emit("updateWin", data);
         });
         //update user's loss in db
         socket.on("updateLoss", (data)=>{
-            User.findOneAndUpdate({ username: data.username },{ losses: Number(data.losses) },{ useFindAndModify:false });
+            User.findOneAndUpdate({ username: data.username },{ losses: Number(data.losses) },{ new:true }, (error, success)=>{
+                if(error){
+                    console.log("ERROR: ", error)
+                }else{
+                    console.log("SUCCESS", success)
+                }
+            });
              io.of("/game").emit("updateLoss", data);
+        });
+
+        //get all users and calculate leaderboard
+        socket.on("getLeaderBoard", async(data)=>{
+            leaderBoard = [];
+            const allUsers = await User.find({});
+            allUsers.forEach((user)=>{
+                leaderBoard.push({username: user.username, wins: user.wins  });
+            });
+            io.of("/game").emit("getLeaderBoard", leaderBoard);
         });
 
         //enable spctators to send reactions
@@ -125,10 +154,14 @@ io.of("/game").on("connection", function (socket) {
         socket.on("eyes", (data)=>{
             io.of("/game").emit("eyes", data);
         });
+        //clap reaction
+        socket.on("clap", (data)=>{
+            io.of("/game").emit("clap", data);
+        });
 
         //event to send message
-        socket.on("message", (msg)=>{
-            socket.emit("message", msg);
+        socket.on("message", (data)=>{
+            io.of("/game").emit("message", data);
         });
 
         // Event to inform player that the opponent left
@@ -151,10 +184,27 @@ io.of("/view").on("connection", (spectator)=>{
     spectator.on("eyes", (data) => {
         io.of("/game").emit("eyes", data);
     });
+    //clap
+    spectator.on("clap", (data) => {
+        io.of("/game").emit("clap", data);
+    });
 
     //event to send message
-    spectator.on("message", (msg) => {
-        io.of("/game").emit("message", msg);
+    spectator.on("message", (data) => {
+        io.of("/game").emit("message", data);
+    });
+    //get all users and calculate leaderboard
+    spectator.on("getLeaderBoard", async (data) => {
+        console.log("here")
+        leaderBoard = [];
+        const allUsers = await User.find({});
+        allUsers.forEach((user) => {
+            leaderBoard.push({
+                username: user.username,
+                wins: user.wins
+            });
+        });
+        io.of("/game").emit("getLeaderBoard", leaderBoard);
     });
 });
 

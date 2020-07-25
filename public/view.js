@@ -47,7 +47,7 @@
 
     function renderTurnMessage() {
         if (!myTurn) { // If not player's turn disable the board
-            $("#message").text("Your opponent's turn");
+            // $("#message").text("Your opponent's turn");
             $(".board button").attr("disabled", true);
         } else { // Enable it otherwise
             $("#message").text("Your turn");
@@ -72,16 +72,16 @@
     socket.on("game.begin", function (data) {
         symbol = data.symbol; // The server is assigning the symbol
         myTurn = symbol === "X"; // 'X' starts first
-        console.log(data);
-        window.localStorage.setItem("usernameX",data.username1);
-        window.localStorage.setItem("usernameO",data.username2);
+        // console.log(data);
+        // window.localStorage.setItem("usernameX",data.username1);
+        // window.localStorage.setItem("usernameO",data.username2);
         renderTurnMessage();
     });
 
     // Bind on event for opponent leaving the game
     socket.on("opponent.left", function () {
         // $("#message").text("Your opponent left the game.");
-        alert("Opponent Left The Game!")
+        // alert("Opponent Left The Game!")
         $(".board button").attr("disabled", true);
     });
 
@@ -109,6 +109,7 @@
         "/eatpellet.ogg",
       ],
     });
+    
     // $("button").on("click", ()=>{
     //     clicked.play();
     // });
@@ -116,35 +117,88 @@
 
      //communication events
      $("#happy").on("click", () => {
-         socket2.emit("happy", "😀");
+         socket2.emit("happy", {
+             reaction: "😀",
+             from: "Spectator"
+         });
      });
      socket.on("happy", (data) => {
-         $(".output").append(`<p>${data}</p>`);
+         $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}`);
      });
      //eyes reaction
      $("#eyes").on("click", () => {
-         socket2.emit("eyes", "👀");
+         socket2.emit("eyes", {
+             reaction: "👀",
+             from: "Spectator"
+         });
      });
      socket.on("eyes", (data) => {
-         $(".output").append(`<p>${data}</p>`);
+         $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
      });
 
      //love reaction
      $("#love").on("click", () => {
-         socket2.emit("love", "💓");
+         socket2.emit("love", {
+             reaction: "💓",
+             from: "Spectator"
+         });
      });
      socket.on("love", (data) => {
-         $(".output").append(`<p>${data}</p>`);
+         $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
+     });
+     //clap reaction
+     $("#clap").on("click", () => {
+         socket2.emit("clap", {
+             reaction: "👏",
+             from: "Spectator"
+         });
+     });
+     socket.on("clap", (data) => {
+         $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
      });
 
      //send a message
      $("#send").on("click", () => {
          var msg = $("#chat-message").val();
-         socket2.emit("message", msg);
+         socket2.emit("message", {
+             message: msg,
+             from: "Spectator"
+         });
          $("#chat-message").val(" ")
      });
 
-     socket.on("message", (msg) => {
-         $(".output").append(`<p>${msg}</p>`);
+     socket.on("message", (data) => {
+         $(".output").append(`<p><strong>${data.from}: </strong>${data.message}</p>`);
      });
+      //leaderboard
+      $(".trigger").on("click", () => {
+          $(".list #leads").empty();
+          if ($(".leader-board .loader").hasClass("spinner-border")) {
+              $(".leader-board .loader").removeClass("spinner-border")
+          } else {
+              $(".leader-board .loader").addClass("spinner-border")
+          }
+          $(".leader-board").toggleClass("open");
+          socket2.emit("getLeaderBoard", "leaderboard");
+      });
+      socket.on("getLeaderBoard", async (data) => {
+          var leaders = [];
+          var bar = 0;
+          var size = 0;
+          await data.forEach(user => {
+              if (bar <= user.wins) {
+                  leaders.push(user);
+                  bar = user.wins;
+                  size += 1;
+              };
+          });
+          for (var i = size - 1; i >= 0; i--) {
+              if ($(".leader-board").hasClass("open")) {
+                  $(".list #leads").append(`<li style="position: relative;"><strong>${leaders[i].username}</strong> - ${leaders[i].wins}</li>`)
+              };
+          }
+          // await leaders.forEach((lead) => {
+
+          // });
+      });
 })();

@@ -113,7 +113,6 @@
     socket.on("game.begin", function (data) {
         symbol = data.symbol; // The server is assigning the symbol
         myTurn = symbol === "X"; // 'X' starts first
-        console.log(data);
         window.localStorage.setItem("usernameX",data.username1);
         window.localStorage.setItem("usernameO",data.username2);
         renderTurnMessage();
@@ -162,36 +161,58 @@
 
     //communication events
     $("#happy").on("click", ()=>{
-        socket.emit("happy", "😀");
+        socket.emit("happy", {
+            reaction: "😀",
+            from: $("#username").text()
+        });
     });
     socket.on("happy", (data)=>{
-        $(".output").append(`<p>${data}</p>`);
+        $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
     });
     //eyes reaction
     $("#eyes").on("click", ()=>{
-        socket.emit("eyes", "👀");
+        socket.emit("eyes", {
+            reaction: "👀",
+            from: $("#username").text()
+        });
     });
     socket.on("eyes", (data)=>{
-        $(".output").append(`<p>${data}</p>`);
+        $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
     });
 
     //love reaction
     $("#love").on("click", ()=>{
-        socket.emit("love", "💓");
+        socket.emit("love", {
+            reaction: "💓",
+            from: $("#username").text()
+        });
     });
     socket.on("love", (data)=>{
-        $(".output").append(`<p>${data}</p>`);
+        $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
+    });
+    //clap reaction
+    $("#clap").on("click", ()=>{
+        socket.emit("clap", {
+            reaction: "👏",
+            from: $("#username").text()
+        });
+    });
+    socket.on("clap", (data)=>{
+        $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
     });
 
     //send a message
     $("#send").on("click", ()=>{
         var msg = $("#chat-message").val();
-        socket.emit("message", msg);
+        socket.emit("message", {
+            message: msg,
+            from: $("#username").text()
+        });
          $("#chat-message").val(" ")
     });
 
-    socket.on("message", (msg)=>{
-        $(".output").append(`<p>${msg}</p>`);
+    socket.on("message", (data)=>{
+        $(".output").append(`<p><strong>${data.from}: </strong>${data.message}</p>`);
     });
     $("#chat-message").on("change keyup paste", ()=>{
         if($(this).val().length = 0){
@@ -199,4 +220,36 @@
         }
     });
 
+    //leaderboard
+    $(".trigger").on("click", ()=>{
+        $(".list #leads").empty();
+        if ($(".leader-board .loader").hasClass("spinner-border")){
+            $(".leader-board .loader").removeClass("spinner-border")
+        }
+        else{
+            $(".leader-board .loader").addClass("spinner-border")
+        }
+        $(".leader-board").toggleClass("open");
+        socket.emit("getLeaderBoard", "leaderboard");
+    });
+    socket.on("getLeaderBoard", async (data)=>{
+        var leaders = [];
+        var bar = 0;
+        var size = 0;
+        await data.forEach(user=>{
+            if (bar <= user.wins) {
+                leaders.push(user);
+                bar = user.wins;
+                size +=1;
+            };
+        });
+        for (var i = size - 1; i >= 0; i--) {
+            if ($(".leader-board").hasClass("open")) {
+                $(".list #leads").append(`<li style="position: relative;"><strong>${leaders[i].username}</strong> - ${leaders[i].wins}</li>`)
+            };
+        }
+        // await leaders.forEach((lead) => {
+            
+        // });
+    });
 })();
