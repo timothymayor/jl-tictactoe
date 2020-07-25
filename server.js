@@ -145,19 +145,19 @@ io.of("/game").on("connection", function (socket) {
         var spectators = io.of("/view")
 
         //event to send happy reaction
-        socket.on("happy", (data)=>{
-            io.of("/game").emit("happy", data);
+        socket.on("reaction", (data) => {
+            io.of("/game").emit("reaction", data);
         });
-        socket.on("love", (data)=>{
-            io.of("/game").emit("love", data);
-        });
-        socket.on("eyes", (data)=>{
-            io.of("/game").emit("eyes", data);
-        });
-        //clap reaction
-        socket.on("clap", (data)=>{
-            io.of("/game").emit("clap", data);
-        });
+        // socket.on("love", (data)=>{
+        //     io.of("/game").emit("love", data);
+        // });
+        // socket.on("eyes", (data)=>{
+        //     io.of("/game").emit("eyes", data);
+        // });
+        // //clap reaction
+        // socket.on("clap", (data)=>{
+        //     io.of("/game").emit("clap", data);
+        // });
 
         //event to send message
         socket.on("message", (data)=>{
@@ -175,19 +175,19 @@ io.of("/game").on("connection", function (socket) {
 
 io.of("/view").on("connection", (spectator)=>{
     //event to send happy reaction
-    spectator.on("happy", (data) => {
-        io.of("/game").emit("happy", data);
+    spectator.on("reaction", (data) => {
+        io.of("/game").emit("reaction", data);
     });
-    spectator.on("love", (data) => {
-        io.of("/game").emit("love", data);
-    });
-    spectator.on("eyes", (data) => {
-        io.of("/game").emit("eyes", data);
-    });
-    //clap
-    spectator.on("clap", (data) => {
-        io.of("/game").emit("clap", data);
-    });
+    // spectator.on("love", (data) => {
+    //     io.of("/game").emit("love", data);
+    // });
+    // spectator.on("eyes", (data) => {
+    //     io.of("/game").emit("eyes", data);
+    // });
+    // //clap
+    // spectator.on("clap", (data) => {
+    //     io.of("/game").emit("clap", data);
+    // });
 
     //event to send message
     spectator.on("message", (data) => {

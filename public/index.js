@@ -161,44 +161,35 @@
 
     //communication events
     $("#happy").on("click", ()=>{
-        socket.emit("happy", {
+        socket.emit("reaction", {
             reaction: "😀",
             from: $("#username").text()
         });
     });
-    socket.on("happy", (data)=>{
+    socket.on("reaction", (data) => {
         $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
     });
     //eyes reaction
     $("#eyes").on("click", ()=>{
-        socket.emit("eyes", {
+        socket.emit("reaction", {
             reaction: "👀",
             from: $("#username").text()
         });
     });
-    socket.on("eyes", (data)=>{
-        $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
-    });
 
     //love reaction
     $("#love").on("click", ()=>{
-        socket.emit("love", {
+        socket.emit("reaction", {
             reaction: "💓",
             from: $("#username").text()
         });
     });
-    socket.on("love", (data)=>{
-        $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
-    });
     //clap reaction
     $("#clap").on("click", ()=>{
-        socket.emit("clap", {
+        socket.emit("reaction", {
             reaction: "👏",
             from: $("#username").text()
         });
-    });
-    socket.on("clap", (data)=>{
-        $(".output").append(`<p><strong>${data.from}: </strong>${data.reaction}</p>`);
     });
 
     //send a message
@@ -248,8 +239,5 @@
                 $(".list #leads").append(`<li style="position: relative;"><strong>${leaders[i].username}</strong> - ${leaders[i].wins}</li>`)
             };
         }
-        // await leaders.forEach((lead) => {
-            
-        // });
     });
 })();
